@@ -9,10 +9,6 @@ tags:
   - compile
   - SDK 
 ---
-#  Head1
-
-##  Head2
-
 ![Alone](/media/files/2016/3/alone.jpg)
 <p />
 
@@ -69,6 +65,8 @@ Product中选择MT7628,Flash和DDR选择上首先关注的是DDR的大小，菜�
 1.ifconfig能否看到ra0，如果没有使用ifconfig ra0 up。
 
 2.如果能看到ra0，但是依然看不到SSID，那么可以查看'source/vendor/Ralink/RT2860AP/RT2860\_default\_vlan'文件.把'Channel'与'AutoChannelSelect'改成1。然后重新编译烧入再看。
+
+3.使用nvram\_set Channel与AutoChannelSelect 为1，然后重启 
 
 <p />
 
