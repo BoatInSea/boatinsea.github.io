@@ -45,9 +45,10 @@ Product中选择MT7628,Flash和DDR选择上首先关注的是DDR的大小，菜�
 1.理论上配置好后调用make dep;make就能编译出两个image: zImage.lzma, user\_uImage(此处也得确保使用lzma压缩而不是gzip压缩).
 
 2.烧入Flash切记使用User\_uImage。
-
+================
 ###  2. 坑与解决
 
+<p />
 ####  编译错误
 
 <p>
