@@ -9,7 +9,8 @@ tags:
   - compile
   - SDK 
 ---
-
+#
+##
 ![Alone](/media/files/2016/3/alone.jpg)
 <p />
 ###  1. MT7628 SDK 4.3.1.0 编译
@@ -42,7 +43,7 @@ Product中选择MT7628,Flash和DDR选择上首先关注的是DDR的大小，菜�
 如果烧入好之后发现找不到默认的MT7628\_AP,那么需要确认如下几个情况：
 </p>
 1.ifconfig能否看到ra0，如果没有使用ifconfig ra0 up。
-2.如果能看到ra0，但是依然看不到SSID，那么可以查看source/vendor/Ralink/RT2860AP/RT2860\_default\_vlan文件.把Channel改成1。然后重新编译烧入再看。
+2.如果能看到ra0，但是依然看不到SSID，那么可以查看'source/vendor/Ralink/RT2860AP/RT2860\_default\_vlan'文件.把'Channel'与'AutoChannelSelect'改成1。然后重新编译烧入再看。
 
 <p />
 ###  3. 连上MT7628\_AP Enjoy 
