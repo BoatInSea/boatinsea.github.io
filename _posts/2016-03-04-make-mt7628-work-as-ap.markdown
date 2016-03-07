@@ -22,7 +22,7 @@ tags:
 
 1.对于MT7628, gcc-4.6.3需要被安装到/opt/下面。
 
-2.务必安装toolchain中的lzma到gcc-4.6.3/usr/bin下面。
+2.务必安装toolchain中的lzma到System。
 
 3.make squash fs似乎gcc的bin目录下已经有了，如果不放心可以编译出来后替换或者拷贝过去。
 
