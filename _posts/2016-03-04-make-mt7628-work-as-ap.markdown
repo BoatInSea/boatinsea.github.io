@@ -1,5 +1,5 @@
 ---
-title: Github 开篇-编译MT7628 image并且bring up开发板
+title: Github 开篇-编译MT7628 Image并且Bring Up开发板
 layout: post
 guid: urn:uuid:de8d598d-6f35-4c7b-ab23-1951062dadfc
 tags:
