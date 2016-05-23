@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="author" content="Jianqiang Shi" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+    <title>在lighttpd中使用cgi和cookie实现简单登录</title>
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link href="/atom.xml" rel="alternate" title="Jianqiang's Blog" type="application/atom+xml" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/media/css/style.css">
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/retina.js/1.3.0/retina.min.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+    <script type="text/javascript"> hljs.initHighlightingOnLoad(); </script>
+  </head>
+  <body>
+      <div id="main" role="main">
+        <header>
+          <div id="header">
+            <h1><a title="Jianqiang's Blog" class="" href="/">Jianqiang's Blog</a></h1>
+          </div>
+          <nav>
+            
+            <span><a title="Archive" href="/archive.html"><i class="fa fa-list-ul"></i></a></span>
+            
+            <span><a title="Tags" href="/tags.html"><i class="fa fa-tags"></i></a></span>
+            
+            <span><a title="About" href="/about.html"><i class="fa fa-user"></i></a></span>
+            
+            <span><a title="Gallery" href="http://foto.lhzhang.com"><i class="fa fa-film"></i></a></span>
+            
+            <span><a title="Subscribe" href="/atom.xml"><i class="fa fa-rss"></i></a></span>
+            
+          </nav>
+        </header>
+        <div id="content">
+        <article>
+  <section class="title">
+    <h2>在lighttpd中使用cgi和cookie实现简单登录 </h2>
+  </section>
+  <section class="meta">
+  <span class="time">
+    <time datetime="2016-03-24">2016-03-24</time>
+  </span>
+  
+  <span class="tags">
+    
+    <a href="/tags.html#lighttpd" title="lighttpd">#lighttpd</a>
+    
+    <a href="/tags.html#cookie" title="cookie">#cookie</a>
+    
+    <a href="/tags.html#redirect" title="redirect">#redirect</a>
+    
+    <a href="/tags.html#login" title="login">#login</a>
+    
+    <a href="/tags.html#cgi" title="cgi">#cgi</a>
+    
+  </span>
+  <!-- BEGIN this would not work on any other domain -->
+  <span
+    class           = "like-wrapper"
+    like-shortname  = 'gopherwood'
+    like-identifier = 'urn:uuid:de8d898d-6f35-4f7b-bb23-1951062dadfc'
+    like-name       = '在lighttpd中使用cgi和cookie实现简单登录'
+    like-btn        = '&#xf087;'
+    like-link       = 'http://lhzhang.com/2016/03/24/simple-login-with-cookie-cgi-lighttpd.html'
+    ></span>
+  <script type="text/javascript">
+    var l = document.createElement('script');
+    l.type = 'text/javascript'; l.async = true; l.src = 'http://www.like-btn.com/javascript/widget.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(l);
+  </script>
+  <!-- END this would not work on any other domain -->
+  
+  </section>
+  <section class="post">
+  <p><img src="/media/files/2016/3/shangrila.jpg" alt="Alone" /></p>
+<p />
+
+<p>最近在用lighttpd加cgi做路由器的网页管理，一开始使用mod_auth来做登录认证，发现欠缺美观与灵活。由于该模块使用的是浏览器自带的对话框来做登录框非常原始，不方便定制化。而且虽然支持多种验证方式但是针对nvram的存储方式缺乏支持（至少目前了解如此）。基于此，想着利用cookie来做简易的认证结果存储，于是便有此文。</p>
+<p />
+
+<h3 id="id-section">1. 环境</h3>
+
+<p>
+操作系统为Ubuntu 14，lighttpd使用1.4.20（为了与7628上面的版本一致）。制作一个index.html文件，包含一个简单的post form，提交给cgi\_bin目录下的login.cgi。再建立一个whatever.html如果登录成功就跳转到此页面，否则返回index.html。
+</p>
+
+<h3 id="id-cookie">2. 前端cookie处理</h3>
+
+<p>
+包含了index部分的cookie重置以及whatever.html里面的cookie教研两部分。
+</p>
+
+<p>1.index.html中添加JavaScript代码</p>
+
+<pre><code>    document.cookie = "user=0";
+    //保证回到index.html后cookie被reset
+</code></pre>
+
+<p>2.whatever.html中需要检验收到的cookie是不是包含了正常的用户名等信息。此时我只放置了用户名，不包含密码等信息。</p>
+
+<pre><code>    var one, end;
+    one = document.cookie.indexOf("user");
+    end = (document.cookie.indexOf(';',one)!=-1) ? document.cookie.indexOf(';',one) : document.cookie.length;
+    var login = unescape(document.cookie.substring(one+5,end));
+    if(login=="0" || document.cookie.length == 0) {
+        parent.location.href="/index.shtml";
+    }
+    //此段代码用来防止未经index.html认证就访问此页面
+</code></pre>
+
+<h3 id="id-cgi-cookie">3. cgi cookie处理</h3>
+
+<p>1.本文关注cookie所以此处不讲用户验证逻辑</p>
+
+<p>2.认证成功后的跳转逻辑如下代码所示</p>
+
+<pre><code>    printf("HTTP/1.0 302 Redirect\r\n");
+    printf("Location: %s\r\n", /whatever.html);
+    printf("Set-Cookie: user=administrator; path=/\r\n\r\n");// !!!两次换行
+</code></pre>
+
+<h3 id="id-section-1">4. 小问题</h3>
+
+<p>
+Set-Cookie:必须包含path否则一切都是浮云。目前在FF, chrome上面都能工作。
+</p>
+
+
+  </section>
+  
+  <div class="divider">
+    <span>
+    
+    <a href="/2016/03/08/github-blog-with-jekyll.html"><i class="fa fa-chevron-left"></i></a>
+    
+    </span>
+    <!-- BEGIN comment icon
+    <span><a href="javascript:leave_comment();" id="leave_comment_link"><i class="fa fa-comment-o"></i></a></span>
+    <span><a href="javascript:collapse_comment();" id="collapse_comment_link" style="display:none;"><i class="fa fa-chevron-up"></i></a></span>
+      END comment icon -->
+
+    <span>
+    
+    <a href="/2016/03/27/butterfat-b28n-js-international-async-usecase.html"><i class="fa fa-chevron-right"></i></a>
+    
+    </span>
+  </div>
+
+  <!-- BEGIN comment
+  <section class="comment">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'gopherwood';
+      var disqus_identifier = 'urn:uuid:de8d898d-6f35-4f7b-bb23-1951062dadfc';
+
+      function leave_comment() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          $("#leave_comment_link").css("display", "none");
+          $("#collapse_comment_link").css("display", "");
+      };
+      function collapse_comment() {
+          // document.getElementById("disqus_thread").innerHTML = '';
+          $("#disqus_thread").slideUp(400, function() {
+              $("#disqus_thread").empty();
+              $("#leave_comment_link").css("display", "");
+              $("#collapse_comment_link").css("display", "none");
+              $("#disqus_thread").css("display", "");
+          });
+      };
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </section>
+  END comment -->
+  
+</article>
+
+        </div>
+        <footer>
+          <div>
+            
+            &copy; 2016 ~ 2016 Jianqiang Shi | powered by jekyll | themed by <a href="http://lhzhang.com" title="sext vi">sext vi</a> | fork <a href="https://github.com/waynezhang/blog" title="fork me">me</a>
+          </div>
+        </footer>
+      </div> <!-- main -->
+  </body>
+</html>

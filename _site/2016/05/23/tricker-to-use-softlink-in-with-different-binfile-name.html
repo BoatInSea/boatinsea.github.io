@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="author" content="Jianqiang Shi" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+    <title>在小系统上使用符号链接来扩展和简化命令行应用程序功能</title>
+    
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link href="/atom.xml" rel="alternate" title="Jianqiang's Blog" type="application/atom+xml" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/media/css/style.css">
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/retina.js/1.3.0/retina.min.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+    <script type="text/javascript"> hljs.initHighlightingOnLoad(); </script>
+  </head>
+  <body>
+      <div id="main" role="main">
+        <header>
+          <div id="header">
+            <h1><a title="Jianqiang's Blog" class="" href="/">Jianqiang's Blog</a></h1>
+          </div>
+          <nav>
+            
+            <span><a title="Archive" href="/archive.html"><i class="fa fa-list-ul"></i></a></span>
+            
+            <span><a title="Tags" href="/tags.html"><i class="fa fa-tags"></i></a></span>
+            
+            <span><a title="About" href="/about.html"><i class="fa fa-user"></i></a></span>
+            
+            <span><a title="Gallery" href="http://foto.lhzhang.com"><i class="fa fa-film"></i></a></span>
+            
+            <span><a title="Subscribe" href="/atom.xml"><i class="fa fa-rss"></i></a></span>
+            
+          </nav>
+        </header>
+        <div id="content">
+        <article>
+  <section class="title">
+    <h2>在小系统上使用符号链接来扩展和简化命令行应用程序功能 </h2>
+  </section>
+  <section class="meta">
+  <span class="time">
+    <time datetime="2016-05-23">2016-05-23</time>
+  </span>
+  
+  <span class="tags">
+    
+    <a href="/tags.html#MTK" title="MTK">#MTK</a>
+    
+    <a href="/tags.html#ralink\_init" title="ralink\_init">#ralink\_init</a>
+    
+    <a href="/tags.html#nvram\_get" title="nvram\_get">#nvram\_get</a>
+    
+    <a href="/tags.html#nvram" title="nvram">#nvram</a>
+    
+    <a href="/tags.html#ln" title="ln">#ln</a>
+    
+    <a href="/tags.html#argc" title="argc">#argc</a>
+    
+    <a href="/tags.html#argv" title="argv">#argv</a>
+    
+  </span>
+  <!-- BEGIN this would not work on any other domain -->
+  <span
+    class           = "like-wrapper"
+    like-shortname  = 'gopherwood'
+    like-identifier = 'urn:uuid:de8d898d-6f35-4f7b-bb23-1951eb7dadfc'
+    like-name       = '在小系统上使用符号链接来扩展和简化命令行应用程序功能'
+    like-btn        = '&#xf087;'
+    like-link       = 'http://lhzhang.com/2016/05/23/tricker-to-use-softlink-in-with-different-binfile-name.html'
+    ></span>
+  <script type="text/javascript">
+    var l = document.createElement('script');
+    l.type = 'text/javascript'; l.async = true; l.src = 'http://www.like-btn.com/javascript/widget.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(l);
+  </script>
+  <!-- END this would not work on any other domain -->
+  
+  </section>
+  <section class="post">
+  <p><img src="/media/files/2016/3/shangrila.jpg" alt="Alone" /></p>
+<p />
+
+<p>好久没有更新了，主要也是最近的工作比较偏重复劳作。没有太多值得提的。这次的topic也是非常简单轻松的。主要是讲如何使用软链接来扩展命令行的功能命令。</p>
+<p />
+
+<p>在MT7628上开发了一段时间，主要是web配置（内容比较繁杂，包括wifi配置，wps配置，wan配置等等），当然还有GPIO操作。不经意间看到一个在linux上比较多的小把戏。想象一下这样一种场景：有一个bin比如ralink_init，里面做了很多的扩展，比如修改路由器工作模式，获取nvram的key值，设置nvram的key值，等等等等。如果你要通过参数来识别就要增加非常多的子命令，类似于busybox的applet，然后busybox知道该进入那个branch做对应的工作。这个会让人比较烦恼，因为命令行下打字麻烦了很多。所以下一章节讲讲怎么简化这种情况。同样适用于改进busybox的命令。</p>
+<p />
+
+<h3 id="id-section">代码示例</h3>
+
+<p>
+创建一个c文件如下, 其中参数校验，以及native\_nv\_printf和native\_nv\_show的实现不贴出来了：
+</p>
+
+<pre><code>    void main (int argc, char* argv) {
+        char* cmd;
+        cmd = argv[0];
+        if (!strcmp(cmd, "nvram_print")) {
+            native_nv_printf(argc, argv);
+        } else if (!strcmp(cmd, "nvram_show")) {
+            native_nv_show(argc, argv);
+        }
+    }
+</code></pre>
+
+<p />
+
+<h3 id="id-section-1">创建软链接</h3>
+
+<pre><code>    ln -sf ralink_init nvram_print         
+    ln -sf ralink_init nvram_show 
+</code></pre>
+
+<p />
+
+<h3 id="id-section-2">测试</h3>
+
+<pre><code>    nvram_print WebInit
+</code></pre>
+
+  </section>
+  
+  <div class="divider">
+    <span>
+    
+    <a href="/2016/03/29/openwrt-opkg-overlay-space-not-enough-howto.html"><i class="fa fa-chevron-left"></i></a>
+    
+    </span>
+    <!-- BEGIN comment icon
+    <span><a href="javascript:leave_comment();" id="leave_comment_link"><i class="fa fa-comment-o"></i></a></span>
+    <span><a href="javascript:collapse_comment();" id="collapse_comment_link" style="display:none;"><i class="fa fa-chevron-up"></i></a></span>
+      END comment icon -->
+
+    <span>
+    
+    <i class="fa fa-circle"></i>
+    
+    </span>
+  </div>
+
+  <!-- BEGIN comment
+  <section class="comment">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+      var disqus_shortname = 'gopherwood';
+      var disqus_identifier = 'urn:uuid:de8d898d-6f35-4f7b-bb23-1951eb7dadfc';
+
+      function leave_comment() {
+          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+          dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          $("#leave_comment_link").css("display", "none");
+          $("#collapse_comment_link").css("display", "");
+      };
+      function collapse_comment() {
+          // document.getElementById("disqus_thread").innerHTML = '';
+          $("#disqus_thread").slideUp(400, function() {
+              $("#disqus_thread").empty();
+              $("#leave_comment_link").css("display", "");
+              $("#collapse_comment_link").css("display", "none");
+              $("#disqus_thread").css("display", "");
+          });
+      };
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </section>
+  END comment -->
+  
+</article>
+
+        </div>
+        <footer>
+          <div>
+            
+            &copy; 2016 ~ 2016 Jianqiang Shi | powered by jekyll | themed by <a href="http://lhzhang.com" title="sext vi">sext vi</a> | fork <a href="https://github.com/waynezhang/blog" title="fork me">me</a>
+          </div>
+        </footer>
+      </div> <!-- main -->
+  </body>
+</html>

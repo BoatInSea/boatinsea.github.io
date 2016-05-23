@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+ <title>Jianqiang's Blog</title>
+ <link href="http://lhzhang.com/atom.xml" rel="self"/>
+ <link href="http://lhzhang.com"/>
+ <updated>2016-05-23T18:31:13+08:00</updated>
+ <id>http://lhzhang.com/</id>
+ <author>
+   <name>Jianqiang Shi</name>
+ </author>
+
+ 
+ <entry>
+   <title>在小系统上使用符号链接来扩展和简化命令行应用程序功能</title>
+   <link href="http://lhzhang.com/2016/05/23/tricker-to-use-softlink-in-with-different-binfile-name.html"/>
+   <updated>2016-05-23T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d898d-6f35-4f7b-bb23-1951eb7dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/shangrila.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;好久没有更新了，主要也是最近的工作比较偏重复劳作。没有太多值得提的。这次的topic也是非常简单轻松的。主要是讲如何使用软链接来扩展命令行的功能命令。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;在MT7628上开发了一段时间，主要是web配置（内容比较繁杂，包括wifi配置，wps配置，wan配置等等），当然还有GPIO操作。不经意间看到一个在linux上比较多的小把戏。想象一下这样一种场景：有一个bin比如ralink_init，里面做了很多的扩展，比如修改路由器工作模式，获取nvram的key值，设置nvram的key值，等等等等。如果你要通过参数来识别就要增加非常多的子命令，类似于busybox的applet，然后busybox知道该进入那个branch做对应的工作。这个会让人比较烦恼，因为命令行下打字麻烦了很多。所以下一章节讲讲怎么简化这种情况。同样适用于改进busybox的命令。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section&quot;&gt;代码示例&lt;/h3&gt;
+
+&lt;p&gt;
+创建一个c文件如下, 其中参数校验，以及native\_nv\_printf和native\_nv\_show的实现不贴出来了：
+&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    void main (int argc, char* argv) {
+        char* cmd;
+        cmd = argv[0];
+        if (!strcmp(cmd, &quot;nvram_print&quot;)) {
+            native_nv_printf(argc, argv);
+        } else if (!strcmp(cmd, &quot;nvram_show&quot;)) {
+            native_nv_show(argc, argv);
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section-1&quot;&gt;创建软链接&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;    ln -sf ralink_init nvram_print         
+    ln -sf ralink_init nvram_show 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section-2&quot;&gt;测试&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;    nvram_print WebInit
+&lt;/code&gt;&lt;/pre&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>opkg安装ipk遇上overlay空间不足问题的解决方案</title>
+   <link href="http://lhzhang.com/2016/03/29/openwrt-opkg-overlay-space-not-enough-howto.html"/>
+   <updated>2016-03-29T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d898d-6f35-4f7b-bb23-1951eb7dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/shangrila.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;openwrt有个非常好的安装包管理软件opkg，只要选定好source后就跟其他unix系统中的管理软件一样好用，而且opkg还能选择安装路径,相当灵活。但是openwrt得存储空间是有限的，于是就会遇上overlay安装空间不足的问题了。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;岔开一下，overlay顾名思义是覆盖的意思，overlay在分区上占用了一个可读写的独立分区，在mount的时候覆盖到/根目录下面。等于是在该独立分区的文件与根目录下的文件系统是共用了一个路径。安装到overlay中的bin在/bin下面也会看到。这样用户数据就存放在overlay分区，如果要恢复出厂设置，只需要清空overlay目录就行了。非常方便。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;但是openwrt系统中的存储空间是有限的，比如Flash为16MB，那么实际可供读写的overlay分区可能只有9MB。在这种情况下安装大型一点的ipk安装包可能就不行了。但是幸好opkg提供了灵活的安装路径选择，通过修改opkg.conf我们可以添加安装路径把ipk安装到其他地方，比如SD卡。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section&quot;&gt;添加安装路径解决安装空间不够的问题&lt;/h3&gt;
+
+&lt;p&gt;
+打开/etc/opkg.conf文件，我们可以看到如下的结构。
+&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    dest root /
+    dest ram /tmp
+    lists_dir ext /var/opkg-lists
+    option overlay_root /overlay
+    option check_signature 1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;前两行就是安装路径，第一行是默认路径，第二行需要在opkg命令后面加上-d ram才能起作用。为了安装ipk到SD卡，我们需要添加一行&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    dest usb /tmp/run/mounted/mmcblk0p1/system
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;假设/tmp/run/mounted/mmcblk0p1为SD卡的挂载点，安装在SD卡的system目录内。于是我们可以这样安装一个ipk到SD卡。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    opkg install ffmpeg -d usb
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果遇上SD卡不能安装怎么处理。其实方法已经提到了，就是使用-d ram。安装到tmp目录下。只要设置好PATH环境变量一样可以运行安装的软件。如果ipk只是一个库，那么环境变量是LD_LIBRARY_PATH。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-opkgipk&quot;&gt;opkg安装ipk的几种常用方法&lt;/h3&gt;
+
+&lt;p&gt;1.通过官方网站安装ipk包&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    opkg update 
+    opkg install xxxx 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2.通过文件系统本地安装ipk&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    opkg install /tmp/xxxx-xxx.ipk
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;3.通过http或者ftp来安装ipk&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    opkg install http://192.168.1.222:8080/xxxx-xxx.ipk
+    opkg install ftp://192.168.1.222/xxxx-xxx.ipk
+&lt;/code&gt;&lt;/pre&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>在网页上使用b28n.js实现多语言支持</title>
+   <link href="http://lhzhang.com/2016/03/27/butterfat-b28n-js-international-async-usecase.html"/>
+   <updated>2016-03-27T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d8abd-6f35-4f7b-bb23-1951062dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/shangrila.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;b28n.js是一个多语言支持模板，全名叫做butterfat internationalization。是一个通过http GET来获取web界面元素语言描述xml来进行字典式翻译的js工具。下面通过一个简单例程来演示如何使用：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;     &amp;lt;html&amp;gt;
+        &amp;lt;head&amp;gt;
+        &amp;lt;title&amp;gt;I18N Test&amp;lt;/title&amp;gt;
+        &amp;lt;script type=&quot;text/javascript&quot; src=&quot;b28n.js&quot;&amp;gt;&amp;lt;/script&amp;gt;
+          &amp;lt;script type=&quot;text/javascript&quot;&amp;gt;
+            Butterlate.setTextDomain(&quot;messages&quot;,&quot;http://butterfat.net/~bmuller/i18n&quot;);
+            function startUp() {
+              var test = document.getElementById(&quot;test&quot;);
+              test.innerHTML = _(&quot;this is english&quot;);
+            }
+        &amp;lt;/script&amp;gt;
+        &amp;lt;/head&amp;gt;
+        &amp;lt;body onload=&quot;startUp();&quot;&amp;gt;
+           &amp;lt;div id=&quot;test&quot;&amp;gt;
+        &amp;lt;/body&amp;gt;
+     &amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;理论上在http服务器上放好多语言的xml文件，格式为&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    &amp;lt;message msgid=&quot;this is english&quot; msgstr=&quot;this is spanish&quot; /&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;就能实现翻译了。不过这个js工具时间可能比较早不支持异步的http GET。对于如今大多数浏览器，在主线程中不能进行同步的http GET。所以发现翻译不起作用。于是要做的就是b28n.js的异步处理。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-request&quot;&gt;1. 修改request为异步并添加回调函数&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;    request.open(&quot;GET&quot;,this.po,true);//true意味是异步请求
+    request.onload = function (e) {
+      if (request.readyState === 4) {
+        if (request.status === 200) {
+          console.log(request.responseXML);
+          var pos = request.responseXML.documentElement.getElementsByTagName(&quot;message&quot;);
+          for(var i=0; i&amp;lt;pos.length; i++) {
+            //setter 是setTextDomain传入的参数，指代this.dict
+            setter.set(pos[i].getAttribute(&quot;msgid&quot;),pos[i].getAttribute(&quot;msgstr&quot;));
+            console.log(&quot;pos[i]&quot;+pos[i].getAttribute(&quot;msgid&quot;)+&quot;|&quot;+pos[i].getAttribute(&quot;msgstr&quot;));
+          }
+          func();//给外部用的回调，用来做翻译赋值
+        } else {
+          console.error(request.statusText);
+        }
+      }
+    };
+    request.onerror = function (e) {
+      console.error(request.statusText);
+    };
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面并没贴出所有代码，但是核心代码都已经有了。JavaScript还可以优化，功能上基本完成。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-settextdomainb28nonloadb28n&quot;&gt;2. setTextDomain提供翻译回调和b28n的字典变量（onload函数访问不到b28n的字典变量）&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;    this.setTextDomain = function(domain, func, setter) {.....}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;修改setTextDomain参数来实现。&lt;/p&gt;
+&lt;p&gt;
+&lt;/p&gt;
+
+&lt;h3 id=&quot;id-settextdomainhtmlbody-onload&quot;&gt;3. 放置setTextDomain到html的body onload里面&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;    &amp;lt;body onLoad=&quot;initValue()&quot;&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;把显示初始化的内容放入onLoad就可以了，一旦完成http GET，翻译赋值也就完成了，web会被刷新成新的语言。&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>在lighttpd中使用cgi和cookie实现简单登录</title>
+   <link href="http://lhzhang.com/2016/03/24/simple-login-with-cookie-cgi-lighttpd.html"/>
+   <updated>2016-03-24T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d898d-6f35-4f7b-bb23-1951062dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/shangrila.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;最近在用lighttpd加cgi做路由器的网页管理，一开始使用mod_auth来做登录认证，发现欠缺美观与灵活。由于该模块使用的是浏览器自带的对话框来做登录框非常原始，不方便定制化。而且虽然支持多种验证方式但是针对nvram的存储方式缺乏支持（至少目前了解如此）。基于此，想着利用cookie来做简易的认证结果存储，于是便有此文。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section&quot;&gt;1. 环境&lt;/h3&gt;
+
+&lt;p&gt;
+操作系统为Ubuntu 14，lighttpd使用1.4.20（为了与7628上面的版本一致）。制作一个index.html文件，包含一个简单的post form，提交给cgi\_bin目录下的login.cgi。再建立一个whatever.html如果登录成功就跳转到此页面，否则返回index.html。
+&lt;/p&gt;
+
+&lt;h3 id=&quot;id-cookie&quot;&gt;2. 前端cookie处理&lt;/h3&gt;
+
+&lt;p&gt;
+包含了index部分的cookie重置以及whatever.html里面的cookie教研两部分。
+&lt;/p&gt;
+
+&lt;p&gt;1.index.html中添加JavaScript代码&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    document.cookie = &quot;user=0&quot;;
+    //保证回到index.html后cookie被reset
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;2.whatever.html中需要检验收到的cookie是不是包含了正常的用户名等信息。此时我只放置了用户名，不包含密码等信息。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    var one, end;
+    one = document.cookie.indexOf(&quot;user&quot;);
+    end = (document.cookie.indexOf(&#39;;&#39;,one)!=-1) ? document.cookie.indexOf(&#39;;&#39;,one) : document.cookie.length;
+    var login = unescape(document.cookie.substring(one+5,end));
+    if(login==&quot;0&quot; || document.cookie.length == 0) {
+        parent.location.href=&quot;/index.shtml&quot;;
+    }
+    //此段代码用来防止未经index.html认证就访问此页面
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;id-cgi-cookie&quot;&gt;3. cgi cookie处理&lt;/h3&gt;
+
+&lt;p&gt;1.本文关注cookie所以此处不讲用户验证逻辑&lt;/p&gt;
+
+&lt;p&gt;2.认证成功后的跳转逻辑如下代码所示&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    printf(&quot;HTTP/1.0 302 Redirect\r\n&quot;);
+    printf(&quot;Location: %s\r\n&quot;, /whatever.html);
+    printf(&quot;Set-Cookie: user=administrator; path=/\r\n\r\n&quot;);// !!!两次换行
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&quot;id-section-1&quot;&gt;4. 小问题&lt;/h3&gt;
+
+&lt;p&gt;
+Set-Cookie:必须包含path否则一切都是浮云。目前在FF, chrome上面都能工作。
+&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>使用Jekyll建立静态博客</title>
+   <link href="http://lhzhang.com/2016/03/08/github-blog-with-jekyll.html"/>
+   <updated>2016-03-08T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d898d-6f35-4c7b-ab23-1951062dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/shangrila.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;p&gt;此文用来记录博主自己的搭建过程，以作备案，并供网络分享。&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-ruby&quot;&gt;1. 安装Ruby&lt;/h3&gt;
+
+&lt;p&gt;
+由于使用Mac，系统再带了ruby，所以跳过此步。
+&lt;/p&gt;
+
+&lt;h3 id=&quot;id-bundle&quot;&gt;2. 安装bundle&lt;/h3&gt;
+
+&lt;p&gt;
+bundle 是一个包工具，可以使用bundle来把所有Jekyll依赖的模块都安装进一个特定的目录下面。有了bundle整个过程就易如反掌了。
+&lt;/p&gt;
+
+&lt;p&gt;1.调用gem install bundle&lt;/p&gt;
+
+&lt;p&gt;2.在工作目录下创建一个Gemfile文件，也可以使用bundle init来生成一个默认的Gemfile文件。&lt;/p&gt;
+
+&lt;p&gt;3.修改Gemfile内容为:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;    source &#39;https://ruby.taobao.org/&#39;
+    gem &#39;jekyll&#39;
+    gem &#39;github-pages&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;4.运行bundle install,成功后会把所有依赖包都下载并安装好。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-jekyll&quot;&gt;3. 运行Jekyll&lt;/h3&gt;
+
+&lt;p&gt;1.cd Jekyll 工作目录.&lt;/p&gt;
+
+&lt;p&gt;2.运行 bundle exec jekyll serve.&lt;/p&gt;
+
+&lt;p&gt;3.访问http://127.0.0.1:4000,假如jekyll目录已经有正确的jekyll博客模板,就能看的你想看的内容.&lt;/p&gt;
+
+&lt;p&gt;4.如果运行出错，可以尝试把之前的Gemfile拷贝到jekyll工作目录。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-pagesgithubcom&quot;&gt;4. pages.github.com&lt;/h3&gt;
+
+&lt;p&gt;1.在github工作根目录下创建一个新的工程为username.github.io。&lt;/p&gt;
+
+&lt;p&gt;2.模仿pages.github.com的步骤测试一个index.html，然后访问https://username.github.io&lt;/p&gt;
+
+&lt;p&gt;3.看的index.html能正常显示说明github工作目录完成。username应该全小写。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-jekyll-1&quot;&gt;5. 启用Jekyll模板&lt;/h3&gt;
+
+&lt;p&gt;1.搜索github上面中意的jekyll模板fork到本地jekyll工作目录&lt;/p&gt;
+
+&lt;p&gt;2.在本地4000端口测试好博客内容后push到username.github.io。&lt;/p&gt;
+
+&lt;h3 id=&quot;id-httpsusernamegithubio&quot;&gt;6. 访问https://username.github.io&lt;/h3&gt;
+
+&lt;h3 id=&quot;id-section&quot;&gt;7. 注意事项&lt;/h3&gt;
+
+&lt;p&gt;
+在markdown语法上jekyll模拟环境与github上会有些不同，就目前看到的现象，要注意在github上面标题，列表之间一定要加上空行，否则显示一定会出问题。
+&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Github 开篇-编译MT7628 Image并且Bring Up开发板</title>
+   <link href="http://lhzhang.com/2016/03/04/make-mt7628-work-as-ap.html"/>
+   <updated>2016-03-04T00:00:00+08:00</updated>
+   <id>urn:uuid:de8d598d-6f35-4c7b-ab23-1951062dadfc</id>
+   <content type="html">&lt;p&gt;&lt;img src=&quot;/media/files/2016/3/alone.jpg&quot; alt=&quot;Alone&quot; /&gt;&lt;/p&gt;
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-mt7628-sdk-4310-&quot;&gt;1. MT7628 SDK 4.3.1.0 编译&lt;/h3&gt;
+
+&lt;p&gt;
+由于有SDK的User Manual参考，所以主要还是参考用户手册，此文只是提一下需要注意的点。
+&lt;/p&gt;
+
+&lt;h4 id=&quot;id-section&quot;&gt;环境&lt;/h4&gt;
+
+&lt;p&gt;1.对于MT7628, gcc-4.6.3需要被安装到/opt/下面。&lt;/p&gt;
+
+&lt;p&gt;2.务必安装toolchain中的lzma到System。&lt;/p&gt;
+
+&lt;p&gt;3.make squash fs似乎gcc的bin目录下已经有了，如果不放心可以编译出来后替换或者拷贝过去。&lt;/p&gt;
+
+&lt;p&gt;4.Uboot用的是gcc-3.4.2。&lt;/p&gt;
+
+&lt;h4 id=&quot;id-section-1&quot;&gt;芯片&lt;/h4&gt;
+
+&lt;p&gt;1.在source目录下进行make menuconfig可以调出配置菜单。&lt;/p&gt;
+
+&lt;p&gt;2.选中默认设置与内核定制，确保linux2.6.36.x中选择了Wifi，并且使用AP模式。&lt;/p&gt;
+
+&lt;h4 id=&quot;id-ddr-flash&quot;&gt;DDR Flash&lt;/h4&gt;
+
+&lt;p&gt;Product中选择MT7628,Flash和DDR选择上首先关注的是DDR的大小，菜单中是MB单位，所以可能是64MB，对于Flash,如果不是Dual Image模式就不用在意大小，如果是Dual Image，在后面配置的时候会有选择Flash大小的选项。&lt;/p&gt;
+
+&lt;h4 id=&quot;id-wllll&quot;&gt;WLLLL&lt;/h4&gt;
+
+&lt;p&gt;确保配置是与你所用的开发板的WAN，LAN设置一致。&lt;/p&gt;
+
+&lt;p&gt;1.理论上配置好后调用make dep;make就能编译出两个image: zImage.lzma, user_uImage(此处也得确保使用lzma压缩而不是gzip压缩).&lt;/p&gt;
+
+&lt;p&gt;2.烧入Flash切记使用user_uImage。&lt;/p&gt;
+
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-section-2&quot;&gt;2. 坑与解决&lt;/h3&gt;
+
+&lt;p /&gt;
+
+&lt;h4 id=&quot;id-section-3&quot;&gt;编译错误&lt;/h4&gt;
+
+&lt;p&gt;
+编译出错主要是wifi驱动加入内核后编译失败，要使编译通过只需要改一个Kconfig就行，也就是位于linux.2.6.36.x/ralink/下面。打开注释
+&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    source /driver/net/wireless/mt_wifi/embedded/Kconfig
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p /&gt;
+
+&lt;h4 id=&quot;id-ssid&quot;&gt;SSID找不到&lt;/h4&gt;
+
+&lt;p&gt;
+如果烧入好之后发现找不到默认的MT7628\_AP, 那么可能需要尝试如下三个方法:
+&lt;/p&gt;
+
+&lt;p&gt;1.ifconfig能否看到ra0，如果没有使用ifconfig ra0 up。&lt;/p&gt;
+
+&lt;p&gt;2.如果能看到ra0，但是依然看不到SSID，那么可以查看’source/vendor/Ralink/RT2860AP/RT2860_default_vlan’文件.把’Channel’与’AutoChannelSelect’改成1。然后重新编译烧入再看。&lt;/p&gt;
+
+&lt;p&gt;3.使用nvram_set Channel与AutoChannelSelect 为1，然后重启&lt;/p&gt;
+
+&lt;p /&gt;
+
+&lt;h3 id=&quot;id-mt7628ap-enjoy&quot;&gt;3. 连上MT7628_AP Enjoy&lt;/h3&gt;
+
+&lt;p /&gt;
+
+&lt;p&gt;编后话，切记编译MT7628不要使用SDK 4.3.0.0，会有各种编译问题，特别是uclibc不能修改成0.9.33.2,还有不少user application不能编译成功。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ 
+</feed>
