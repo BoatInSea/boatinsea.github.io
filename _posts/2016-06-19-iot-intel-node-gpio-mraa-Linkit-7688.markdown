@@ -93,7 +93,7 @@ javascript程序代码如下，特别注意的是，这个pin必须被设置成G
     >m.getPlatformType()
     >99
 
-知道原因了，板子没有被识别出来，所以gpio count为0，所以传入参数5就报错了。继续查下去，因为没有LinkIt 7688的mraa库的源代码，所以只能使用intel-iot-devkit上的查看，发现有个arm.c是针对ARM芯片，然后还有对于树莓派的c文件。intel-iot-devkit代码不支持mips芯片，参考arm.c其实里面是查看了/proc/cpuinfo里面的machine信息来判断platform type的。打开mraa.node文件可以看到里面也是查看了cpuinfo中的machine字段，内容为MediaTeck Linkit 7688 Smart。现在两个选项，修改machine字段，或者修改mraa.node的源代码改成自己板子的machine。 不过在看到mraa.node中出现了/sys/class/gpio/export, value, unexport等字段后，我相信其实LinkIt 7688的mraa对GPIO的操作是用bash脚本方式控制的。 所以何必绕弯子去通过mraa来操作GPIO，是用nodejs的childprocess的spawn就能实现了。测试后完全能正常工作。
+知道原因了，板子没有被识别出来，所以gpio count为0，所以传入参数5就报错了。继续查下去，因为没有LinkIt 7688的mraa库的源代码，所以只能使用intel-iot-devkit上的查看，发现有个arm.c是针对ARM芯片，然后还有对于树莓派的c文件。intel-iot-devkit代码不支持mips芯片，参考arm.c其实里面是查看了/proc/cpuinfo里面的machine信息来判断platform type的。打开mraa.node文件可以看到里面也是查看了cpuinfo中的machine字段，内容为MediaTeck Linkit 7688 Smart。现在两个选项，修改machine字段，或者修改mraa.node的源代码改成自己板子的machine。 不过在看到mraa.node中出现了/sys/class/gpio/export, value, unexport等字段后，我相信其实LinkIt 7688的mraa对GPIO的操作是用bash脚本方式控制的。 所以何必绕弯子去通过mraa来操作GPIO，使用nodejs的childprocess的spawn就能实现了。测试后完全能正常工作。
 
 ### 结束语 
 
