@@ -237,7 +237,7 @@ channel id等于4，channel的api key也在其中，在上传或者查询channel
 一次update field post
 
 
-        update("88", "field1");
+        update("88", "field1");//更新 channel的第一个field的数据
         cc3000.disconnect();
 
         //update 函数定义如下
