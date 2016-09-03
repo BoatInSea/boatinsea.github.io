@@ -51,7 +51,9 @@ tags:
 <p/>
 ### 参考
 1.https://github.com/shokai/node-arduino-firmata/blob/master/samples/sysex/StandardFirmataWithLedBlink/StandardFirmataWithLedBlink.ino
+
 2.http://firmata.org/wiki/V2.1ProtocolDetails#Sysex\_Message\_Format
+
 3.https://github.com/shokai/node-arduino-firmata
 
 
